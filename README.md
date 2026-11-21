@@ -1,6 +1,6 @@
 # Chess Reviewer Client
 
-Static Vite and TypeScript frontend for [Chess Reviewer Engine](https://github.com/le-task/reviewer-engine). Paste one standard chess PGN to submit an analysis, then replay the game with per-move classifications and an evaluation bar. Stockfish 19 and PostgreSQL run on the backend, not in the browser.
+Responsive Vite and TypeScript frontend for [Chess Reviewer Engine](https://github.com/harry-personal-projects/reviewer-engine). Review a PGN or explore a named opening on a Chessground board. chess.js checks interactive moves in the browser; Stockfish 19 and PostgreSQL run on the backend.
 
 ## Run locally
 
@@ -12,13 +12,21 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. The example points to `http://127.0.0.1:8000`; edit `VITE_API_BASE_URL` in `.env.local` if the API is elsewhere, then restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
+Open `http://127.0.0.1:5173`. `VITE_API_BASE_URL` is required in every environment; the example points to `http://127.0.0.1:8000`. If the API is elsewhere, edit `.env.local` and restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
 
 ## Review a game
 
 Paste a PGN such as `1. f3 e5 2. g4 Qh4# 0-1` and select **Analyze game**. Use the move list, Previous/Next, or the left/right arrow keys to replay it. Evaluation is from White's perspective; a positive number favors White.
 
 The review URL resumes polling or opens the existing result after reload. Anyone with the link can open the review for 24 hours. The browser does not store the pasted PGN. **Check again** retries loading the same review after a network error; it does not submit another job.
+
+Recent submissions are stored as links in the current browser for up to 24 hours (latest 100); they do not sync between devices. Failed submissions and externally shared links are not added. In the opening catalog, select a named line to replay it on the board.
+
+Both boards accept legal moves directly. Click or drag a piece, or focus the board and use the arrow keys and Enter to select a square. Pick a piece when promoting. The engine classifies the candidate and refreshes its recommendations. Undo or return to the recorded ply without changing the original game or catalog opening.
+
+The engine panel shows up to three ranked moves for the side to move, with the root and up to four replies per line. Mate and automatic draws can shorten a line. Opening SAN is shown separately. Older reviews may only have stored roots. New reviews show accuracy v3 per side: costly drops in engine win chance count more than small errors. This is not Chess.com's proprietary score. Resubmit to recalculate an older review; its stored score is unchanged.
+
+Each move shows its classification icon and label. Right-drag to draw an arrow; knight offsets bend in an L. Right-click an arrow or an endpoint to remove it, repeat the drag to toggle it, or select **Clear arrows**. Moving to another position clears annotations.
 
 ## Verify and deploy
 
@@ -29,6 +37,8 @@ npm exec -- tsc --noEmit
 
 In the browser, verify a valid PGN completes, move navigation updates the board and evaluation, and reloading the review URL does not resubmit. An invalid PGN should show an error and keep the input.
 
+Check review and opening boards on a narrow touch viewport and in both color themes. Play a legal continuation, verify the returned label and engine lines, and undo it without changing the recorded SAN.
+
 Import this repo into Vercel. Set `VITE_API_BASE_URL` to the public HTTPS API origin before deploying; `VITE_*` values are public and must not contain secrets. `vercel.json` sets the Vite build and `dist/` output directory. Set the backend's `REVIEWER_CLIENT_ORIGIN` to the deployed frontend origin.
 
-Update this README in the same PR when setup, configuration, or user-facing behavior changes.
+Before enabling public deployments or previews, confirm the combined frontend can be distributed under [Chessground's GPL-3.0-or-later terms](https://github.com/lichess-org/chessground#license), retain the applicable dependency and board/piece asset notices, and provide corresponding source for the deployed revision. Retain the BSD-2-Clause notice for chess.js. This is a release gate, not a change to this repository's licensing.
