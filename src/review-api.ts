@@ -2,9 +2,10 @@ import { parseBoard, type Square } from './board';
 
 export type Evaluation = { kind: 'cp'; centipawns: number }
   | { kind: 'mate'; winner: 'white' | 'black'; moves: number };
-type Position = { board: Square[]; evaluation: Evaluation };
+export type Recommendation = { san: string; uci: string; evaluation: Evaluation };
+type Position = { board: Square[]; evaluation: Evaluation; recommendations?: Recommendation[] };
 export type ReviewedMove = Position & { ply: number; san: string; uci: string; classification: string };
-type Accuracy = { version: 'v1'; white: number | null; black: number | null };
+type Accuracy = { version: 'v1' | 'v2'; white: number | null; black: number | null };
 type OpeningIdentity = { id: number; eco: string; name: string };
 type MatchedOpening = OpeningIdentity & { matchedPly: number };
 type CatalogOpening = OpeningIdentity & { movesSan: string[] };
@@ -91,7 +92,7 @@ function percentage(value: unknown): value is number | null {
 }
 
 function accuracy(value: unknown): Accuracy {
-  if (!record(value) || value.version !== 'v1'
+  if (!record(value) || (value.version !== 'v1' && value.version !== 'v2')
     || !percentage(value.white) || !percentage(value.black)) return invalidResponse();
   return { version: value.version, white: value.white, black: value.black };
 }
@@ -122,10 +123,19 @@ function evaluation(value: unknown): Evaluation {
   return invalidResponse();
 }
 
-function position(fen: unknown, score: unknown): Position {
+function position(fen: unknown, score: unknown, candidates: unknown): Position {
   const board = typeof fen === 'string' ? parseBoard(fen) : null;
   if (!board) return invalidResponse();
-  return { board, evaluation: evaluation(score) };
+  if (candidates == null) return { board, evaluation: evaluation(score) };
+  if (!Array.isArray(candidates) || candidates.length > 3) return invalidResponse();
+  const seen = new Set<string>();
+  const recommendations = candidates.map((candidate: unknown): Recommendation => {
+    if (!record(candidate) || !text(candidate.san) || !text(candidate.uci)
+      || !uci.test(candidate.uci) || seen.has(candidate.uci)) return invalidResponse();
+    seen.add(candidate.uci);
+    return { san: candidate.san, uci: candidate.uci, evaluation: evaluation(candidate.evaluation) };
+  });
+  return { board, evaluation: evaluation(score), recommendations };
 }
 
 function result(value: unknown): ReviewResult {
@@ -135,11 +145,11 @@ function result(value: unknown): ReviewResult {
     || !text(profile.bookVersion) || !integer(profile.nodes) || profile.nodes <= 0
     || !integer(profile.multiPv) || profile.multiPv <= 0) return invalidResponse();
   return {
-    initial: position(value.initialFen, value.initialEvaluation),
+    initial: position(value.initialFen, value.initialEvaluation, value.initialRecommendations),
     moves: value.moves.map((item: unknown, index: number): ReviewedMove => {
       if (!record(item) || item.ply !== index + 1 || !text(item.san)
         || !text(item.uci) || !uci.test(item.uci) || !text(item.classification)) return invalidResponse();
-      return { ...position(item.fen, item.evaluation), ply: item.ply, san: item.san,
+      return { ...position(item.fen, item.evaluation, item.recommendations), ply: item.ply, san: item.san,
         uci: item.uci, classification: item.classification };
     }),
     ...(value.accuracy === undefined ? {} : { accuracy: accuracy(value.accuracy) }),

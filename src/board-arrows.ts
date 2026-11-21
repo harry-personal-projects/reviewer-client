@@ -4,21 +4,43 @@ function center(square: string): [number, number] {
   return [square.charCodeAt(0) - 97 + 0.5, 8 - Number(square[1]) + 0.5];
 }
 
+function edge(x: number, y: number, dx: number, dy: number, width: number): string {
+  return `${x - width * dy} ${y + width * dx}`;
+}
+
 function drawArrow(from: string, to: string): SVGPathElement {
   const [x, y] = center(from);
   const [endX, endY] = center(to);
-  const length = Math.hypot(endX - x, endY - y);
-  const dx = (endX - x) / length;
-  const dy = (endY - y) / length;
+  const files = Math.abs(endX - x);
+  const ranks = Math.abs(endY - y);
+  const knight = (files === 2 && ranks === 1) || (files === 1 && ranks === 2);
+  const bendX = knight && files > ranks ? endX : x;
+  const bendY = knight && ranks > files ? endY : y;
+  const length = Math.hypot(endX - bendX, endY - bendY);
+  const dx = (endX - bendX) / length;
+  const dy = (endY - bendY) / length;
+  const startDx = knight ? Math.sign(bendX - x) : dx;
+  const startDy = knight ? Math.sign(bendY - y) : dy;
   const neckX = endX - 0.4 * dx;
   const neckY = endY - 0.4 * dy;
+  const shaft = 0.11;
+  const head = 0.24;
+  let leftBend = '';
+  let rightBend = '';
+  if (knight) {
+    // The miter is offset from the centerline corner by both segment normals.
+    const bendDx = startDx + dx;
+    const bendDy = startDy + dy;
+    leftBend = `L ${edge(bendX, bendY, bendDx, bendDy, shaft)}`;
+    rightBend = `L ${edge(bendX, bendY, bendDx, bendDy, -shaft)}`;
+  }
   const path = document.createElementNS(svgNamespace, 'path');
-  path.setAttribute('d', `M ${x - .11 * dy} ${y + .11 * dx}
-    L ${neckX - .11 * dy} ${neckY + .11 * dx}
-    L ${neckX - .24 * dy} ${neckY + .24 * dx} L ${endX} ${endY}
-    L ${neckX + .24 * dy} ${neckY - .24 * dx}
-    L ${neckX + .11 * dy} ${neckY - .11 * dx}
-    L ${x + .11 * dy} ${y - .11 * dx} Z`);
+  path.setAttribute('d', `M ${edge(x, y, startDx, startDy, shaft)}
+    ${leftBend} L ${edge(neckX, neckY, dx, dy, shaft)}
+    L ${edge(neckX, neckY, dx, dy, head)} L ${endX} ${endY}
+    L ${edge(neckX, neckY, dx, dy, -head)}
+    L ${edge(neckX, neckY, dx, dy, -shaft)} ${rightBend}
+    L ${edge(x, y, startDx, startDy, -shaft)} Z`);
   return path;
 }
 
@@ -29,11 +51,33 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
   overlay.classList.add('board-arrows');
   board.append(overlay);
   const arrows = new Map<string, SVGPathElement>();
-  let drag: { pointer: number; from: string; to?: string; preview?: SVGPathElement } | undefined;
+  let drag: { pointer: number; from: string; moved: boolean; to?: string; preview?: SVGPathElement } | undefined;
 
   function squareAt(event: PointerEvent) {
     const cell = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-square]');
     return cell?.parentElement === board ? cell.dataset.square : undefined;
+  }
+
+  function removeArrow(key: string): boolean {
+    const arrow = arrows.get(key);
+    if (!arrow) return false;
+    arrow.remove();
+    return arrows.delete(key);
+  }
+
+  function removeAt(square: string, event: PointerEvent) {
+    if (!arrows.size) return;
+    const transform = overlay.getScreenCTM();
+    const point = transform && new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
+    // The map retains draw order: the last match is on top.
+    let latest: string | undefined;
+    for (const [key, arrow] of arrows) {
+      if (key.startsWith(square) || key.endsWith(square)
+        || (point && (arrow.isPointInFill(point) || arrow.isPointInStroke(point)))) {
+        latest = key;
+      }
+    }
+    if (latest) removeArrow(latest);
   }
 
   function cancel(pointer: number) {
@@ -50,7 +94,7 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
     if (!from) return;
     event.preventDefault();
     board.setPointerCapture(event.pointerId);
-    drag = { pointer: event.pointerId, from };
+    drag = { pointer: event.pointerId, from, moved: false };
   });
   board.addEventListener('pointermove', event => {
     if (drag?.pointer !== event.pointerId) return;
@@ -59,6 +103,7 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
       return;
     }
     const to = squareAt(event);
+    if (to !== drag.from) drag.moved = true;
     if (to === drag.to) return;
     drag.preview?.remove();
     drag.preview = undefined;
@@ -71,17 +116,16 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
   });
   board.addEventListener('pointerup', event => {
     if (drag?.pointer !== event.pointerId) return;
-    const { from } = drag;
+    const { from, moved } = drag;
     const to = squareAt(event);
     cancel(event.pointerId);
-    if (event.button !== 2 || !to || to === from) return;
-    const key = from + to;
-    const previous = arrows.get(key);
-    if (previous) {
-      previous.remove();
-      arrows.delete(key);
+    if (event.button !== 2 || !to) return;
+    if (to === from) {
+      if (!moved) removeAt(to, event);
       return;
     }
+    const key = from + to;
+    if (removeArrow(key)) return;
     const arrow = drawArrow(from, to);
     arrows.set(key, arrow);
     overlay.append(arrow);

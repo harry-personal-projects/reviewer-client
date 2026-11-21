@@ -1,4 +1,5 @@
 import { createBoard } from './board';
+import { moveClassificationIcon } from './move-icon';
 import type { Evaluation, ReviewResult } from './review-api';
 import type { ReviewView } from './review-controller';
 
@@ -40,6 +41,8 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
   const next = element<HTMLButtonElement>('next-move');
   const evaluation = element('evaluation');
   const meter = element<HTMLMeterElement>('evaluation-meter');
+  const engineMoves = element('engine-moves');
+  const engineMovesStatus = element('engine-moves-status');
   const position = element('current-position');
   const opening = element('review-opening');
   const whiteAccuracy = element('white-accuracy');
@@ -73,6 +76,8 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
         const classification = document.createElement('span');
         notation.textContent = `${Math.ceil(move.ply / 2)}${move.ply % 2 ? '.' : '…'} ${move.san}`;
         classification.textContent = move.classification;
+        const icon = moveClassificationIcon(move.classification);
+        if (icon) classification.prepend(icon);
         button.append(notation, classification);
         button.addEventListener('click', () => choose(move.ply));
         row.append(button);
@@ -92,6 +97,15 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
       evaluation.textContent = score.label;
       meter.value = score.share;
       meter.setAttribute('aria-valuetext', score.label);
+      const candidates = current.recommendations;
+      engineMovesStatus.textContent = candidates === undefined
+        ? 'Not recorded. Submit this game again to get recommendations.'
+        : candidates.length ? '' : 'No recommendations in a finished position.';
+      engineMoves.replaceChildren(...(candidates ?? []).map(candidate => {
+        const row = document.createElement('li');
+        row.textContent = `${candidate.san} · ${describe(candidate.evaluation).label}`;
+        return row;
+      }));
       previous.disabled = ply === 0;
       next.disabled = ply === result.moves.length;
       position.textContent = move ? `Ply ${ply} of ${result.moves.length}: ${move.san}, ${move.classification}` : 'Starting position';

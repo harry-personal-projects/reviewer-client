@@ -147,7 +147,7 @@ nav button[aria-pressed='true'] { background: var(--selection); border-color: va
   margin-block: 0.85rem;
   container-type: inline-size;
 }
-#board {
+#board, #opening-board {
   position: relative;
   display: grid;
   grid-template: repeat(8, minmax(0, 1fr)) / repeat(8, minmax(0, 1fr));
@@ -198,7 +198,33 @@ nav button[aria-pressed='true'] { background: var(--selection); border-color: va
   padding: 0.4rem 0.55rem;
   overflow-wrap: anywhere;
 }
-#move-list span { color: var(--muted); font-size: 0.82rem; }
+#move-list button > span { color: var(--muted); font-size: 0.82rem; }
+.move-icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.65em;
+  block-size: 1.65em;
+  margin-inline-end: 0.35em;
+  border-radius: 50%;
+  color: white;
+  background: #52636c;
+  font: 700 0.85rem/1 system-ui, sans-serif;
+  vertical-align: middle;
+}
+.move-icon[data-mark='brilliant'] { background: #087d78; }
+.move-icon[data-mark='great'] { background: #285eb0; }
+.move-icon[data-mark='best'], .move-icon[data-mark='excellent'] { background: #22743c; }
+.move-icon[data-mark='good'] { background: #536e3b; }
+.move-icon[data-mark='book'] { background: #755337; }
+.move-icon[data-mark='inaccuracy'] { background: #826600; }
+.move-icon[data-mark='mistake'] { background: #a84d12; }
+.move-icon[data-mark='miss'] { background: #a03957; }
+.move-icon[data-mark='blunder'] { background: #a62732; }
+.engine-moves { margin-block-start: 1rem; }
+.engine-moves ol { padding-inline-start: 1.6rem; }
+#engine-moves-status, #opening-replay-status { color: var(--muted); }
+.opening-replay-position { max-inline-size: 32rem; }
+.opening-list h3 > button { text-align: start; }
 button[aria-current='true'] { background: var(--selection); border-color: var(--accent); box-shadow: inset 3px 0 var(--accent); }
 
 @media (max-width: 44rem) {
