@@ -1,43 +1,37 @@
 import './style.css';
 
-const status = document.querySelector('#readiness');
-const button = document.querySelector<HTMLButtonElement>('#check-readiness');
-if (!status || !button) throw new Error('Missing readiness controls');
+import { createReviewController } from './review-controller';
+import { createReviewView, element } from './review-view';
 
-const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-const apiBaseUrl = configuredUrl || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '');
+const controller = createReviewController(createReviewView(ply => controller.choose(ply)));
+const form = element<HTMLFormElement>('review-form');
+const pgn = element<HTMLTextAreaElement>('pgn');
+const replay = element('review-result');
 
-const checkReadiness = async () => {
-  if (!apiBaseUrl) {
-    status.textContent = 'The API address is not configured.';
-    button.disabled = true;
-    return;
-  }
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  void controller.submit(pgn.value);
+});
+element('retry-review').addEventListener('click', controller.load);
+element('new-review').addEventListener('click', () => {
+  controller.back();
+  pgn.focus();
+});
+element('initial-position').addEventListener('click', () => controller.choose(0));
+element('previous-move').addEventListener('click', () => controller.step(-1));
+element('next-move').addEventListener('click', () => controller.step(1));
 
-  status.textContent = 'Checking server…';
-  button.disabled = true;
-  try {
-    const response = await fetch(`${apiBaseUrl.replace(/\/+$/, '')}/readyz`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000),
-    });
-    const body: unknown = await response.json();
-    if (typeof body !== 'object' || body === null || !('status' in body)) {
-      throw new Error('Invalid readiness response');
-    }
-    if (response.ok && body.status === 'ready') {
-      status.textContent = 'Backend and database are ready.';
-    } else if (response.status === 503 && body.status === 'unavailable') {
-      status.textContent = 'The database is unavailable.';
-    } else {
-      throw new Error('Unexpected readiness response');
-    }
-  } catch {
-    status.textContent = 'Could not check the backend.';
-  } finally {
-    button.disabled = false;
-  }
-};
+document.addEventListener('keydown', event => {
+  if (event.defaultPrevented || replay.hidden || event.altKey || event.ctrlKey || event.metaKey
+    || !(event.target instanceof HTMLElement) || event.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  controller.step(event.key === 'ArrowLeft' ? -1 : 1);
+});
 
-button.addEventListener('click', checkReadiness);
-void checkReadiness();
+window.addEventListener('popstate', controller.load);
+window.addEventListener('pagehide', controller.cancel);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) controller.load();
+});
+controller.load();
