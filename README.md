@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. The example points to `http://127.0.0.1:8000`; edit `VITE_API_BASE_URL` in `.env.local` if the API is elsewhere, then restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
+Open `http://127.0.0.1:5173`. `VITE_API_BASE_URL` is required in every environment; the example points to `http://127.0.0.1:8000`. If the API is elsewhere, edit `.env.local` and restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
 
 ## Review a game
 

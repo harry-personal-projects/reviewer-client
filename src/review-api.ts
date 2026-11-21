@@ -15,8 +15,7 @@ type Submission = { id: string; status: 'queued' };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const uci = /^[a-h][1-8][a-h][1-8][qrbn]?$/;
-const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-const baseUrl = configuredUrl || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '');
+const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
 export class ReviewRequestError extends Error {
   constructor(readonly code: string) {
