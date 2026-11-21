@@ -19,6 +19,12 @@ function describe(score: Evaluation) {
   return { share: Math.min(1, Math.max(0, 0.5 + score.centipawns / 2000)), label: `${label} · ${side}` };
 }
 
+function describeAccuracy(score: number | null | undefined): string {
+  return score == null ? 'Not available' : `${score.toFixed(1)}%`;
+}
+
+const historyDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'medium' });
+
 export function createReviewView(choose: (ply: number) => void): ReviewView {
   const form = element('review-form');
   const submit = element<HTMLButtonElement>('submit-review');
@@ -27,6 +33,7 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
   const back = element('new-review');
   const replay = element('review-result');
   const board = createBoard(element('board'));
+  element('clear-arrows').addEventListener('click', board.clearArrows);
   const list = element('move-list');
   const initial = element<HTMLButtonElement>('initial-position');
   const previous = element<HTMLButtonElement>('previous-move');
@@ -34,6 +41,11 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
   const evaluation = element('evaluation');
   const meter = element<HTMLMeterElement>('evaluation-meter');
   const position = element('current-position');
+  const opening = element('review-opening');
+  const whiteAccuracy = element('white-accuracy');
+  const blackAccuracy = element('black-accuracy');
+  const history = element('review-history');
+  const historyEmpty = element('review-history-empty');
   let result: ReviewResult;
   let buttons: HTMLButtonElement[] = [];
   let selected: HTMLButtonElement | undefined;
@@ -49,6 +61,11 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
     },
     result(nextResult) {
       result = nextResult;
+      const match = result.opening;
+      opening.textContent = match === undefined ? 'Opening not recorded'
+        : match === null ? 'No matching opening' : `${match.eco} · ${match.name}`;
+      whiteAccuracy.textContent = describeAccuracy(result.accuracy?.white);
+      blackAccuracy.textContent = describeAccuracy(result.accuracy?.black);
       const rows = result.moves.map(move => {
         const row = document.createElement('li');
         const button = document.createElement('button');
@@ -70,7 +87,7 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
     position(ply) {
       const move = result.moves[ply - 1];
       const current = move ?? result.initial;
-      board(current.board, move?.uci);
+      board.render(current.board, move?.uci);
       const score = describe(current.evaluation);
       evaluation.textContent = score.label;
       meter.value = score.share;
@@ -89,6 +106,32 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
       } else {
         list.scrollTop = 0;
       }
+    },
+    history(entries, currentId) {
+      const focused = document.activeElement;
+      const focusedId = focused instanceof HTMLAnchorElement && history.contains(focused)
+        ? focused.dataset.reviewId : undefined;
+      let focusTarget: HTMLAnchorElement | undefined;
+      const rows = entries.map(entry => {
+        const row = document.createElement('li');
+        const link = document.createElement('a');
+        const time = document.createElement('time');
+        const url = new URL(window.location.href);
+        url.searchParams.set('review', entry.id);
+        link.href = url.href;
+        link.dataset.reviewId = entry.id;
+        if (entry.id.toLowerCase() === currentId?.toLowerCase()) link.setAttribute('aria-current', 'page');
+        if (entry.id === focusedId) focusTarget = link;
+        time.dateTime = entry.createdAt;
+        time.textContent = historyDate.format(Date.parse(entry.createdAt));
+        link.append(time);
+        row.append(link);
+        return row;
+      });
+      history.replaceChildren(...rows);
+      history.hidden = !rows.length;
+      historyEmpty.hidden = !!rows.length;
+      focusTarget?.focus({ preventScroll: true });
     },
   };
 }

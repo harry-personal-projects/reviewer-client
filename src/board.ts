@@ -1,3 +1,5 @@
+import { createBoardArrows } from './board-arrows';
+
 const pieces = {
   K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
   k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟',
@@ -35,10 +37,15 @@ export function createBoard(board: HTMLElement) {
     square.className = `square ${(rank + file) % 2 ? 'square-dark' : 'square-light'}`;
     square.setAttribute('aria-hidden', 'true');
     board.append(square);
-    return { square, name: `${'abcdefgh'[file]}${8 - rank}` };
+    const name = `${'abcdefgh'[file]}${8 - rank}`;
+    square.dataset.square = name;
+    return { square, name };
   });
 
-  return (position: Square[], move?: string) => {
+  const annotations = createBoardArrows(board);
+
+  function render(position: Square[], move?: string) {
+    annotations.clear();
     const occupied: string[] = [];
     cells.forEach(({ square, name }, index) => {
       const piece = position[index];
@@ -54,5 +61,7 @@ export function createBoard(board: HTMLElement) {
       square.classList.toggle('last-move', name === move?.slice(0, 2) || name === move?.slice(2, 4));
     });
     board.setAttribute('aria-label', `Chessboard, White at bottom. ${occupied.join(', ')}`);
-  };
+  }
+
+  return { render, clearArrows: annotations.clear };
 }

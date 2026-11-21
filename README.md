@@ -20,6 +20,10 @@ Paste a PGN such as `1. f3 e5 2. g4 Qh4# 0-1` and select **Analyze game**. Use t
 
 The review URL resumes polling or opens the existing result after reload. Anyone with the link can open the review for 24 hours. The browser does not store the pasted PGN. **Check again** retries loading the same review after a network error; it does not submit another job.
 
+Recent submissions are stored as links in the current browser for up to 24 hours (latest 100); they do not sync between devices. Failed submissions and externally shared links are not added. Use **Openings** to browse the seeded catalog page by page.
+
+New results show the matching opening and an accuracy percentage per side. Accuracy is based on Stockfish expected-points loss, not Chess.com's proprietary score. Right-drag between squares to draw an arrow. Repeat a drag to remove that arrow, or select **Clear arrows**; navigation clears annotations for the previous position.
+
 ## Verify and deploy
 
 ```sh
@@ -30,5 +34,3 @@ npm exec -- tsc --noEmit
 In the browser, verify a valid PGN completes, move navigation updates the board and evaluation, and reloading the review URL does not resubmit. An invalid PGN should show an error and keep the input.
 
 Import this repo into Vercel. Set `VITE_API_BASE_URL` to the public HTTPS API origin before deploying; `VITE_*` values are public and must not contain secrets. `vercel.json` sets the Vite build and `dist/` output directory. Set the backend's `REVIEWER_CLIENT_ORIGIN` to the deployed frontend origin.
-
-Update this README in the same PR when setup, configuration, or user-facing behavior changes.

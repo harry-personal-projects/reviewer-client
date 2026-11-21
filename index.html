@@ -12,41 +12,69 @@
         <p class="kicker">Game analysis</p>
         <h1>Chess Reviewer</h1>
         <p>Replay a game and see how the advantage changed with each move.</p>
+        <nav class="actions" aria-label="Sections">
+          <button id="show-review" type="button" aria-controls="review-page" aria-pressed="true">Game review</button>
+          <button id="show-openings" type="button" aria-controls="openings-page" aria-pressed="false">Opening catalog</button>
+        </nav>
       </header>
-      <form id="review-form">
-        <label for="pgn">Game PGN</label>
-        <textarea id="pgn" rows="8" placeholder="1. e4 e5 2. Nf3 Nc6 *"
-          required spellcheck="false" aria-describedby="review-privacy"></textarea>
-        <small id="review-privacy">Anyone with the review link can open it for 24 hours. Do not paste sensitive information.</small>
-        <button class="primary" id="submit-review" type="submit">Analyze game</button>
-      </form>
-      <p id="review-status" role="status"></p>
-      <div class="actions">
-        <button id="retry-review" type="button" hidden>Check again</button>
-        <button id="new-review" type="button" hidden>Back to PGN</button>
-      </div>
-      <section id="review-result" aria-label="Game review" hidden>
-        <div class="board-panel">
-          <div class="score">
-            <span>Evaluation</span>
-            <output id="evaluation"></output>
-            <meter id="evaluation-meter" min="0" max="1" value="0.5" aria-label="Evaluation from White's perspective"></meter>
-          </div>
-          <div class="board-frame">
-            <div id="board" role="img"></div>
-            <div class="ranks" aria-hidden="true"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
-            <div class="files" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
-          </div>
-          <div class="actions">
-            <button id="previous-move" type="button">Previous</button>
-            <button id="next-move" type="button">Next</button>
-          </div>
-          <p id="current-position" aria-live="polite"></p>
+      <div id="review-page">
+        <form id="review-form">
+          <label for="pgn">Game PGN</label>
+          <textarea id="pgn" rows="8" placeholder="1. e4 e5 2. Nf3 Nc6 *"
+            required spellcheck="false" aria-describedby="review-privacy"></textarea>
+          <small id="review-privacy">Anyone with the review link can open it for 24 hours. Do not paste sensitive information.</small>
+          <button class="primary" id="submit-review" type="submit">Analyze game</button>
+        </form>
+        <p id="review-status" role="status" tabindex="-1"></p>
+        <div class="actions">
+          <button id="retry-review" type="button" hidden>Check again</button>
+          <button id="new-review" type="button" hidden>Back to PGN</button>
         </div>
-        <div class="move-panel">
-          <h2>Moves</h2>
-          <button id="initial-position" type="button">Starting position</button>
-          <ol id="move-list" aria-label="Played moves"></ol>
+        <section id="review-result" aria-label="Game review" hidden>
+          <dl class="review-summary">
+            <div><dt>Opening</dt><dd id="review-opening"></dd></div>
+            <div><dt>White accuracy</dt><dd id="white-accuracy"></dd></div>
+            <div><dt>Black accuracy</dt><dd id="black-accuracy"></dd></div>
+          </dl>
+          <div class="board-panel">
+            <div class="score">
+              <span>Evaluation</span>
+              <output id="evaluation"></output>
+              <meter id="evaluation-meter" min="0" max="1" value="0.5" aria-label="Evaluation from White's perspective"></meter>
+            </div>
+            <div class="board-frame">
+              <div id="board" role="img"></div>
+              <div class="ranks" aria-hidden="true"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+              <div class="files" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+            </div>
+            <div class="actions">
+              <button id="previous-move" type="button">Previous</button>
+              <button id="next-move" type="button">Next</button>
+              <button id="clear-arrows" type="button">Clear arrows</button>
+            </div>
+            <p id="current-position" aria-live="polite"></p>
+          </div>
+          <div class="move-panel">
+            <h2>Moves</h2>
+            <button id="initial-position" type="button">Starting position</button>
+            <ol id="move-list" aria-label="Played moves"></ol>
+          </div>
+        </section>
+        <section class="secondary-panel" id="recent-reviews" aria-labelledby="recent-reviews-title">
+          <h2 id="recent-reviews-title">Recent submissions</h2>
+          <p>This browser only · links expire after 24 hours.</p>
+          <p id="review-history-empty">No recent submissions.</p>
+          <ul id="review-history" class="history-list" role="list" aria-label="Recent submissions" hidden></ul>
+        </section>
+      </div>
+      <section id="openings-page" aria-labelledby="openings-title" hidden>
+        <h2 id="openings-title" tabindex="-1">Opening catalog</h2>
+        <p id="openings-status" role="status"></p>
+        <ul class="opening-list" id="opening-list" role="list" aria-label="Named openings" hidden></ul>
+        <div class="actions">
+          <button id="previous-openings" type="button" hidden>Previous page</button>
+          <button id="next-openings" type="button" hidden>Next page</button>
+          <button id="retry-openings" type="button" hidden>Try again</button>
         </div>
       </section>
     </main>
