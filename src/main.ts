@@ -27,6 +27,9 @@ document.addEventListener('keydown', event => {
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
   event.preventDefault();
   controller.step(event.key === 'ArrowLeft' ? -1 : 1);
+  if (event.target.closest('#move-list')) {
+    replay.querySelector<HTMLButtonElement>('button[aria-current="true"]')?.focus({ preventScroll: true });
+  }
 });
 
 window.addEventListener('popstate', controller.load);
