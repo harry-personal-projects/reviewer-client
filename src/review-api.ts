@@ -1,11 +1,20 @@
-import { parseBoard, type Square } from './board';
+import { validateFen } from 'chess.js';
+import { isMoveClassification, type MoveClassification } from './move-icon';
 
 export type Evaluation = { kind: 'cp'; centipawns: number }
   | { kind: 'mate'; winner: 'white' | 'black'; moves: number };
-export type Recommendation = { san: string; uci: string; evaluation: Evaluation };
-type Position = { board: Square[]; evaluation: Evaluation; recommendations?: Recommendation[] };
-export type ReviewedMove = Position & { ply: number; san: string; uci: string; classification: string };
-type Accuracy = { version: 'v1' | 'v2'; white: number | null; black: number | null };
+type LineMove = { san: string; uci: string };
+export type Recommendation = LineMove & { evaluation: Evaluation; line?: LineMove[]; incomplete?: boolean };
+type ClassifiedMove = LineMove & { classification: MoveClassification };
+type Position = { fen: string; evaluation: Evaluation; recommendations?: Recommendation[] };
+export type ReviewedMove = Position & ClassifiedMove & { ply: number };
+type OpeningReplayMove = LineMove & { fen: string };
+export type OpeningReplay = { initialFen: string; moves: OpeningReplayMove[] };
+
+export type PositionSource = { reviewId: string; ply: number } | { revision: string; openingId: number; ply: number };
+type AnalysisRequest = { source: PositionSource; branch: string[]; candidate?: string };
+export type PositionAnalysis = Position & { recommendations: Recommendation[]; move?: ClassifiedMove };
+type Accuracy = { version: 'v1' | 'v2' | 'v3'; white: number | null; black: number | null };
 type OpeningIdentity = { id: number; eco: string; name: string };
 type MatchedOpening = OpeningIdentity & { matchedPly: number };
 type CatalogOpening = OpeningIdentity & { movesSan: string[] };
@@ -92,7 +101,7 @@ function percentage(value: unknown): value is number | null {
 }
 
 function accuracy(value: unknown): Accuracy {
-  if (!record(value) || (value.version !== 'v1' && value.version !== 'v2')
+  if (!record(value) || (value.version !== 'v1' && value.version !== 'v2' && value.version !== 'v3')
     || !percentage(value.white) || !percentage(value.black)) return invalidResponse();
   return { version: value.version, white: value.white, black: value.black };
 }
@@ -123,19 +132,54 @@ function evaluation(value: unknown): Evaluation {
   return invalidResponse();
 }
 
-function position(fen: unknown, score: unknown, candidates: unknown): Position {
-  const board = typeof fen === 'string' ? parseBoard(fen) : null;
-  if (!board) return invalidResponse();
-  if (candidates == null) return { board, evaluation: evaluation(score) };
+function fen(value: unknown): string {
+  if (typeof value !== 'string' || !validateFen(value).ok) return invalidResponse();
+  return value;
+}
+
+function lineMove(value: unknown): LineMove {
+  if (!record(value) || !text(value.san) || typeof value.uci !== 'string' || !uci.test(value.uci)) {
+    return invalidResponse();
+  }
+  return { san: value.san, uci: value.uci };
+}
+
+function classifiedMove(value: Record<string, unknown>): ClassifiedMove {
+  if (!isMoveClassification(value.classification)) return invalidResponse();
+  return { ...lineMove(value), classification: value.classification };
+}
+
+function recommendations(candidates: unknown): Recommendation[] {
   if (!Array.isArray(candidates) || candidates.length > 3) return invalidResponse();
   const seen = new Set<string>();
-  const recommendations = candidates.map((candidate: unknown): Recommendation => {
-    if (!record(candidate) || !text(candidate.san) || !text(candidate.uci)
-      || !uci.test(candidate.uci) || seen.has(candidate.uci)) return invalidResponse();
-    seen.add(candidate.uci);
-    return { san: candidate.san, uci: candidate.uci, evaluation: evaluation(candidate.evaluation) };
+  return candidates.map((candidate: unknown) => {
+    if (!record(candidate)) return invalidResponse();
+    const root = lineMove(candidate);
+    if (seen.has(root.uci)) return invalidResponse();
+    seen.add(root.uci);
+    const recommendation: Recommendation = { ...root, evaluation: evaluation(candidate.evaluation) };
+    if (candidate.line !== undefined) {
+      if (!Array.isArray(candidate.line) || candidate.line.length < 1 || candidate.line.length > 5) {
+        return invalidResponse();
+      }
+      recommendation.line = candidate.line.map(lineMove);
+      const first = recommendation.line[0];
+      if (first.uci !== root.uci || first.san !== root.san) return invalidResponse();
+    }
+    if (candidate.incomplete !== undefined) {
+      if (typeof candidate.incomplete !== 'boolean'
+        || (candidate.incomplete && (!recommendation.line || recommendation.line.length === 5))) {
+        return invalidResponse();
+      }
+      recommendation.incomplete = candidate.incomplete;
+    }
+    return recommendation;
   });
-  return { board, evaluation: evaluation(score), recommendations };
+}
+
+function position(rawFen: unknown, score: unknown, candidates: unknown): Position {
+  return { fen: fen(rawFen), evaluation: evaluation(score),
+    recommendations: candidates == null ? undefined : recommendations(candidates) };
 }
 
 function result(value: unknown): ReviewResult {
@@ -147,27 +191,23 @@ function result(value: unknown): ReviewResult {
   return {
     initial: position(value.initialFen, value.initialEvaluation, value.initialRecommendations),
     moves: value.moves.map((item: unknown, index: number): ReviewedMove => {
-      if (!record(item) || item.ply !== index + 1 || !text(item.san)
-        || !text(item.uci) || !uci.test(item.uci) || !text(item.classification)) return invalidResponse();
-      return { ...position(item.fen, item.evaluation, item.recommendations), ply: item.ply, san: item.san,
-        uci: item.uci, classification: item.classification };
+      if (!record(item) || item.ply !== index + 1) return invalidResponse();
+      return { ...position(item.fen, item.evaluation, item.recommendations), ...classifiedMove(item), ply: item.ply };
     }),
     ...(value.accuracy === undefined ? {} : { accuracy: accuracy(value.accuracy) }),
     ...(value.opening === undefined ? {} : { opening: opening(value.opening, value.moves.length) }),
   };
 }
 
-async function request(path: string, signal: AbortSignal, expected: number, init?: RequestInit): Promise<unknown> {
+async function request(
+  path: string, signal: AbortSignal, expected: number, init?: RequestInit, timeout = 5000,
+): Promise<unknown> {
   const url = `${apiOrigin()}${path}`;
   const response = await fetch(url, {
     ...init,
     cache: 'no-store',
-    signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
+    signal: AbortSignal.any([signal, AbortSignal.timeout(timeout)]),
   });
-  if (response.status === 404) {
-    void response.body?.cancel().catch(() => {});
-    throw new ReviewRequestError('not_found', 404);
-  }
   let payload: unknown;
   try {
     payload = await response.json();
@@ -228,4 +268,36 @@ export async function getOpenings(
     return invalidResponse();
   }
   return { revision: payload.revision, items, nextAfter };
+}
+
+export async function getOpeningReplay(
+  item: OpeningIdentity, revision: string, signal: AbortSignal,
+): Promise<OpeningReplay> {
+  const query = new URLSearchParams({ revision });
+  const value = await request(`/v1/openings/${item.id}?${query}`, signal, 200);
+  if (!record(value) || value.revision !== revision || value.id !== item.id
+    || value.eco !== item.eco || value.name !== item.name || !Array.isArray(value.moves) || !value.moves.length) {
+    return invalidResponse();
+  }
+  return {
+    initialFen: fen(value.initialFen),
+    moves: value.moves.map((move: unknown, index): OpeningReplayMove => {
+      if (!record(move) || move.ply !== index + 1) return invalidResponse();
+      return { ...lineMove(move), fen: fen(move.fen) };
+    }),
+  };
+}
+
+export async function analyzePosition(input: AnalysisRequest, signal: AbortSignal): Promise<PositionAnalysis> {
+  const value = await request('/v1/positions/analyze', signal, 200, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),
+  }, 15000);
+  if (!record(value)) return invalidResponse();
+  const view = { fen: fen(value.fen), evaluation: evaluation(value.evaluation),
+    recommendations: recommendations(value.recommendations) };
+  if (input.candidate === undefined && value.move === undefined) return view;
+  if (!record(value.move)) return invalidResponse();
+  const move = classifiedMove(value.move);
+  if (move.uci !== input.candidate) return invalidResponse();
+  return { ...view, move };
 }

@@ -4,8 +4,9 @@ import { forgetReview, loadReviewHistory, rememberReview } from './review-histor
 type StatusOptions = { back?: boolean; retry?: boolean; submitting?: boolean };
 export type ReviewView = {
   status(message: string, options?: StatusOptions): void;
-  result(result: ReviewResult): void;
+  result(id: string, result: ReviewResult): void;
   position(ply: number): void;
+  close(): void;
   history(entries: ReviewHistoryEntry[], currentId: string | null): void;
 };
 
@@ -46,6 +47,8 @@ export function createReviewController(view: ReviewView) {
     timer = undefined;
     window.clearTimeout(historyTimer);
     historyTimer = undefined;
+    result = undefined;
+    view.close();
   }
 
   function reviewIdInUrl() {
@@ -81,7 +84,7 @@ export function createReviewController(view: ReviewView) {
       } else if (review.status === 'succeeded') {
         result = review.result;
         ply = 0;
-        view.result(result);
+        view.result(id, result);
         view.position(ply);
       } else if (review.status === 'failed') {
         view.status(failure(review.error.code), { back: true });
@@ -102,7 +105,6 @@ export function createReviewController(view: ReviewView) {
 
   function load() {
     cancel();
-    result = undefined;
     refreshHistory();
     const id = reviewIdInUrl();
     if (id === null) {
@@ -142,7 +144,7 @@ export function createReviewController(view: ReviewView) {
   }
 
   function choose(plyIndex: number) {
-    if (!result || plyIndex < 0 || plyIndex > result.moves.length || plyIndex === ply) return;
+    if (!result || plyIndex < 0 || plyIndex > result.moves.length) return;
     ply = plyIndex;
     view.position(ply);
   }

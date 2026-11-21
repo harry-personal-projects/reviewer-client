@@ -43,9 +43,7 @@
               <meter id="evaluation-meter" min="0" max="1" value="0.5" aria-label="Evaluation from White's perspective"></meter>
             </div>
             <div class="board-frame">
-              <div id="board" role="img"></div>
-              <div class="ranks" aria-hidden="true"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
-              <div class="files" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+              <div class="interactive-board cg-wrap" id="board"></div>
             </div>
             <div class="actions">
               <button id="previous-move" type="button">Previous</button>
@@ -53,16 +51,14 @@
               <button id="clear-arrows" type="button">Clear arrows</button>
             </div>
             <p id="current-position" aria-live="polite"></p>
-            <section class="engine-moves" aria-labelledby="engine-moves-heading">
-              <h2 id="engine-moves-heading">Stockfish recommendations</h2>
-              <p id="engine-moves-status" role="status"></p>
-              <ol id="engine-moves" aria-label="Best moves in the current position"></ol>
-            </section>
           </div>
-          <div class="move-panel">
-            <h2>Moves</h2>
-            <button id="initial-position" type="button">Starting position</button>
-            <ol id="move-list" aria-label="Played moves"></ol>
+          <div class="study-side">
+            <div id="review-analysis"></div>
+            <div class="move-panel">
+              <h2>Moves</h2>
+              <button id="initial-position" type="button">Starting position</button>
+              <ol id="move-list" aria-label="Played moves"></ol>
+            </div>
           </div>
         </section>
         <section class="secondary-panel" id="recent-reviews" aria-labelledby="recent-reviews-title">
@@ -83,6 +79,62 @@
         </div>
       </section>
     </main>
+    <template id="opening-replay-template">
+      <section class="opening-replay" aria-labelledby="opening-replay-title" hidden>
+        <h3 id="opening-replay-title" tabindex="-1"></h3>
+        <button id="back-to-openings" type="button">Back to opening catalog</button>
+        <p id="opening-replay-status" role="status"></p>
+        <div class="opening-replay-position" id="opening-replay-position" hidden>
+          <div class="board-panel">
+            <div class="score">
+              <span>Evaluation</span>
+              <output id="opening-evaluation"></output>
+              <meter id="opening-evaluation-meter" min="0" max="1" value="0.5" aria-label="Evaluation from White's perspective"></meter>
+            </div>
+            <div class="board-frame">
+              <div class="interactive-board cg-wrap" id="opening-board"></div>
+            </div>
+            <div class="actions">
+              <button id="opening-start" type="button">Starting position</button>
+              <button id="opening-previous" type="button">Previous</button>
+              <button id="opening-next" type="button">Next</button>
+              <button id="opening-clear-arrows" type="button">Clear arrows</button>
+            </div>
+          </div>
+          <div class="study-side">
+            <div id="opening-analysis"></div>
+            <section class="opening-recorded-moves" aria-labelledby="opening-recorded-heading">
+              <h4 id="opening-recorded-heading">Recorded opening moves</h4>
+              <ol id="opening-recorded-list"></ol>
+            </section>
+          </div>
+        </div>
+      </section>
+    </template>
+    <template id="position-analysis-template">
+      <div class="analysis-panel">
+        <p class="board-help">Drag a piece or click two squares. With the board focused, use arrow keys to move the cursor,
+          Enter or Space to choose squares, and Escape to clear selection.</p>
+        <span class="board-keyboard-status" aria-live="polite"></span>
+        <div class="branch-actions actions">
+          <button class="undo-branch" type="button" disabled>Undo continuation move</button>
+          <button class="reset-branch" type="button" disabled>Return to recorded position</button>
+        </div>
+        <p class="branch-line" aria-live="polite" hidden></p>
+        <p class="branch-status" role="status" hidden></p>
+        <section class="engine-moves" aria-label="Stockfish recommendations">
+          <h2>Stockfish recommendations</h2>
+          <p class="engine-moves-status" role="status"></p>
+          <button class="retry-analysis" type="button" hidden>Retry analysis</button>
+          <ol class="engine-moves-list" aria-label="Ranked Stockfish lines"></ol>
+        </section>
+        <dialog class="promotion-dialog" aria-label="Choose promotion piece">
+          <h2>Promote pawn</h2>
+          <div class="actions promotion-options"></div>
+          <button class="cancel-promotion" type="button">Cancel promotion</button>
+        </dialog>
+      </div>
+    </template>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

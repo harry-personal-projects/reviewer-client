@@ -1,4 +1,4 @@
-const marks: Record<string, readonly [string, string]> = {
+const marks = {
   Brilliant: ['!!', 'brilliant'],
   Great: ['!', 'great'],
   Best: ['★', 'best'],
@@ -9,10 +9,15 @@ const marks: Record<string, readonly [string, string]> = {
   Mistake: ['?', 'mistake'],
   Miss: ['✕', 'miss'],
   Blunder: ['??', 'blunder'],
-};
+} as const;
 
-export function moveClassificationIcon(classification: string): HTMLElement | undefined {
-  if (!Object.hasOwn(marks, classification)) return;
+export type MoveClassification = keyof typeof marks;
+
+export function isMoveClassification(value: unknown): value is MoveClassification {
+  return typeof value === 'string' && Object.hasOwn(marks, value);
+}
+
+export function moveClassificationIcon(classification: MoveClassification): HTMLElement {
   const mark = marks[classification];
   const icon = document.createElement('span');
   icon.className = 'move-icon';

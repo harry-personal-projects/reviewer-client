@@ -73,13 +73,23 @@ element('review-history').addEventListener('click', event => {
 });
 
 document.addEventListener('keydown', event => {
-  if (event.defaultPrevented || reviewPage.hidden || replay.hidden || event.altKey || event.ctrlKey || event.metaKey
-    || !(event.target instanceof HTMLElement) || event.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey
+    || !(event.target instanceof HTMLElement)
+    || event.target.closest('input, textarea, select, [contenteditable], dialog, .interactive-board')) return;
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-  event.preventDefault();
-  controller.step(event.key === 'ArrowLeft' ? -1 : 1);
-  if (event.target.closest('#move-list')) {
-    replay.querySelector<HTMLButtonElement>('button[aria-current="true"]')?.focus({ preventScroll: true });
+  const delta = event.key === 'ArrowLeft' ? -1 : 1;
+  if (!reviewPage.hidden && !replay.hidden) {
+    event.preventDefault();
+    controller.step(delta);
+    if (event.target.closest('#move-list')) {
+      replay.querySelector<HTMLButtonElement>('button[aria-current="true"]')?.focus({ preventScroll: true });
+    }
+  } else if (!openingsPage.hidden && openings.step(delta)) {
+    event.preventDefault();
+    if (event.target.closest('#opening-recorded-list')) {
+      openingsPage.querySelector<HTMLButtonElement>('.opening-replay button[aria-current="true"]')
+        ?.focus({ preventScroll: true });
+    }
   }
 });
 

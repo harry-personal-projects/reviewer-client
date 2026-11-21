@@ -44,19 +44,18 @@ function drawArrow(from: string, to: string): SVGPathElement {
   return path;
 }
 
-export function createBoardArrows(board: HTMLElement): { clear(): void } {
+export function createBoardArrows(
+  surface: HTMLElement, squareAt: (x: number, y: number) => string | undefined,
+) {
+  const listeners = new AbortController();
+  const options = { signal: listeners.signal };
   const overlay = document.createElementNS(svgNamespace, 'svg');
   overlay.setAttribute('viewBox', '0 0 8 8');
   overlay.setAttribute('aria-hidden', 'true');
   overlay.classList.add('board-arrows');
-  board.append(overlay);
+  surface.parentElement?.append(overlay);
   const arrows = new Map<string, SVGPathElement>();
   let drag: { pointer: number; from: string; moved: boolean; to?: string; preview?: SVGPathElement } | undefined;
-
-  function squareAt(event: PointerEvent) {
-    const cell = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-square]');
-    return cell?.parentElement === board ? cell.dataset.square : undefined;
-  }
 
   function removeArrow(key: string): boolean {
     const arrow = arrows.get(key);
@@ -84,25 +83,25 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
     if (drag?.pointer !== pointer) return;
     drag.preview?.remove();
     drag = undefined;
-    if (board.hasPointerCapture(pointer)) board.releasePointerCapture(pointer);
+    if (surface.hasPointerCapture(pointer)) surface.releasePointerCapture(pointer);
   }
 
-  board.addEventListener('contextmenu', event => event.preventDefault());
-  board.addEventListener('pointerdown', event => {
+  surface.addEventListener('contextmenu', event => event.preventDefault(), options);
+  surface.addEventListener('pointerdown', event => {
     if (event.button !== 2 || drag) return;
-    const from = squareAt(event);
+    const from = squareAt(event.clientX, event.clientY);
     if (!from) return;
     event.preventDefault();
-    board.setPointerCapture(event.pointerId);
+    surface.setPointerCapture(event.pointerId);
     drag = { pointer: event.pointerId, from, moved: false };
-  });
-  board.addEventListener('pointermove', event => {
+  }, options);
+  surface.addEventListener('pointermove', event => {
     if (drag?.pointer !== event.pointerId) return;
     if (!(event.buttons & 2)) {
       cancel(event.pointerId);
       return;
     }
-    const to = squareAt(event);
+    const to = squareAt(event.clientX, event.clientY);
     if (to !== drag.from) drag.moved = true;
     if (to === drag.to) return;
     drag.preview?.remove();
@@ -113,11 +112,11 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
       drag.preview.classList.add('arrow-preview');
       overlay.append(drag.preview);
     }
-  });
-  board.addEventListener('pointerup', event => {
+  }, options);
+  surface.addEventListener('pointerup', event => {
     if (drag?.pointer !== event.pointerId) return;
     const { from, moved } = drag;
-    const to = squareAt(event);
+    const to = squareAt(event.clientX, event.clientY);
     cancel(event.pointerId);
     if (event.button !== 2 || !to) return;
     if (to === from) {
@@ -129,15 +128,22 @@ export function createBoardArrows(board: HTMLElement): { clear(): void } {
     const arrow = drawArrow(from, to);
     arrows.set(key, arrow);
     overlay.append(arrow);
-  });
-  board.addEventListener('pointercancel', event => cancel(event.pointerId));
-  board.addEventListener('lostpointercapture', event => cancel(event.pointerId));
+  }, options);
+  surface.addEventListener('pointercancel', event => cancel(event.pointerId), options);
+  surface.addEventListener('lostpointercapture', event => cancel(event.pointerId), options);
+
+  function clear() {
+    if (drag) cancel(drag.pointer);
+    arrows.clear();
+    overlay.replaceChildren();
+  }
 
   return {
-    clear() {
-      if (drag) cancel(drag.pointer);
-      arrows.clear();
-      overlay.replaceChildren();
+    clear,
+    destroy() {
+      clear();
+      listeners.abort();
+      overlay.remove();
     },
   };
 }
