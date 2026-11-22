@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. `VITE_API_BASE_URL` is required in every environment; the example points to `http://127.0.0.1:8000`. If the API is elsewhere, edit `.env.local` and restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
+Open `http://127.0.0.1:5173`. The example `VITE_API_BASE_URL` points to `http://127.0.0.1:8000`. If the API runs on a different port, edit `.env.local` and restart Vite. The backend's `REVIEWER_CLIENT_ORIGIN` must match the address serving this page exactly, including the port. `localhost` and `127.0.0.1` are different origins.
 
 ## Review a game
 
@@ -28,7 +28,7 @@ The engine panel shows up to three ranked moves for the side to move, with the r
 
 The selected review move or newly classified continuation shows its classification badge on the piece's destination square, as well as its text label next to the move. Right-drag to draw an arrow; knight offsets bend in an L. Right-click an arrow or an endpoint to remove it, repeat the drag to toggle it, or select **Clear arrows**. Moving to another position clears arrows.
 
-## Verify and deploy
+## Verify locally
 
 ```sh
 npm run lint
@@ -38,7 +38,3 @@ npm exec -- tsc --noEmit
 In the browser, verify a valid PGN completes, move navigation updates the board and evaluation, and reloading the review URL does not resubmit. An invalid PGN should show an error and keep the input.
 
 Check review and opening boards on a narrow touch viewport and in both color themes. Play a legal continuation, verify the returned label and engine lines, and undo it without changing the recorded SAN.
-
-Import this repo into Vercel. Set `VITE_API_BASE_URL` to the public HTTPS API origin before deploying; `VITE_*` values are public and must not contain secrets. `vercel.json` sets the Vite build and `dist/` output directory. Set the backend's `REVIEWER_CLIENT_ORIGIN` to the deployed frontend origin.
-
-Before enabling public deployments or previews, confirm the combined frontend can be distributed under [Chessground's GPL-3.0-or-later terms](https://github.com/lichess-org/chessground#license), retain the applicable dependency and board/piece asset notices, and provide corresponding source for the deployed revision. Retain the BSD-2-Clause notice for chess.js. This is a release gate, not a change to this repository's licensing.
