@@ -246,10 +246,11 @@ export async function getReview(id: string, signal: AbortSignal): Promise<Review
 }
 
 export async function getOpenings(
-  revision: string | undefined, after: number, limit: number, signal: AbortSignal,
+  revision: string | undefined, after: number, limit: number, signal: AbortSignal, search: string,
 ): Promise<OpeningPage> {
   const query = new URLSearchParams({ after: String(after), limit: String(limit) });
   if (revision !== undefined) query.set('revision', revision);
+  if (search) query.set('q', search);
   const payload = await request(`/v1/openings?${query}`, signal, 200);
   if (!record(payload) || !text(payload.revision) || !sha.test(payload.revision)
     || (revision !== undefined && payload.revision !== revision)

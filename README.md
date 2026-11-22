@@ -20,13 +20,13 @@ Paste a PGN such as `1. f3 e5 2. g4 Qh4# 0-1` and select **Analyze game**. Use t
 
 The review URL resumes polling or opens the existing result after reload. Anyone with the link can open the review for 24 hours. The browser does not store the pasted PGN. **Check again** retries loading the same review after a network error; it does not submit another job.
 
-Recent submissions are stored as links in the current browser for up to 24 hours (latest 100); they do not sync between devices. Failed submissions and externally shared links are not added. In the opening catalog, select a named line to replay it on the board.
+Recent submissions are stored as links in the current browser for up to 24 hours (latest 100); they do not sync between devices. Failed submissions and externally shared links are not added. In the opening catalog, search by name or ECO code (for example, `Sicilian` or `B20`). Search covers the full catalog and starts after a brief typing pause. Select any result to replay it; going back restores the filtered page.
 
 Both boards accept legal moves directly. Click or drag a piece, or focus the board and use the arrow keys and Enter to select a square. Pick a piece when promoting. The engine classifies the candidate and refreshes its recommendations. Undo or return to the recorded ply without changing the original game or catalog opening.
 
 The engine panel shows up to three ranked moves for the side to move, with the root and up to four replies per line. Mate and automatic draws can shorten a line. Opening SAN is shown separately. Older reviews may only have stored roots. New reviews show accuracy v3 per side: costly drops in engine win chance count more than small errors. This is not Chess.com's proprietary score. Resubmit to recalculate an older review; its stored score is unchanged.
 
-Each move shows its classification icon and label. Right-drag to draw an arrow; knight offsets bend in an L. Right-click an arrow or an endpoint to remove it, repeat the drag to toggle it, or select **Clear arrows**. Moving to another position clears annotations.
+The selected review move or newly classified continuation shows its classification badge on the piece's destination square, as well as its text label next to the move. Right-drag to draw an arrow; knight offsets bend in an L. Right-click an arrow or an endpoint to remove it, repeat the drag to toggle it, or select **Clear arrows**. Moving to another position clears arrows.
 
 ## Verify and deploy
 

@@ -1,6 +1,6 @@
 import { createBoard } from './board';
 import { createBranchAnalysis, type RecordedPosition } from './branch-analysis';
-import { moveClassificationIcon } from './move-icon';
+import { moveClassificationIcon, type MoveClassification } from './move-icon';
 import type { Evaluation, PositionSource, Recommendation } from './review-api';
 
 export function numberedMove(san: string, plyBeforeMove: number, numberBlack = true): string {
@@ -55,7 +55,7 @@ export type PositionView = { select(ply: number): void; clearArrows(): void; des
 
 export function createPositionView(
   { board, host, score, meter }: Elements, source: (ply: number) => PositionSource,
-  initial: RecordedPosition, moves: readonly (RecordedPosition & { uci: string })[],
+  initial: RecordedPosition, moves: readonly (RecordedPosition & { uci: string; classification?: MoveClassification })[],
 ): PositionView {
   const template = document.querySelector<HTMLTemplateElement>('#position-analysis-template')!;
   const panel = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
@@ -85,6 +85,8 @@ export function createPositionView(
   const analysis = createBranchAnalysis(source, initial, moves, {
     board: ground.render,
     analysis({ ply, position, branch, status, notice, canRetry }) {
+      const last = branch.length ? branch.at(-1)?.analysis?.move : moves[ply - 1];
+      ground.markMove(last?.uci, last?.classification);
       const evaluation = position.evaluation && describe(position.evaluation);
       score.textContent = evaluation?.label ?? 'Not available';
       meter.hidden = !evaluation;

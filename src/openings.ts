@@ -117,6 +117,7 @@ export function createOpenings() {
   const title = element('openings-title');
   const status = element('openings-status');
   const list = element('opening-list');
+  const searchInput = element<HTMLInputElement>('opening-search');
   const previous = element<HTMLButtonElement>('previous-openings');
   const next = element<HTMLButtonElement>('next-openings');
   const retry = element('retry-openings');
@@ -140,10 +141,14 @@ export function createOpenings() {
   let cursors = [0];
   let index = 0;
   let nextAfter: number | null = null;
+  let search = '';
+  let searchTimer: number | undefined;
 
   function cancelLoad() {
     active?.abort();
     active = undefined;
+    window.clearTimeout(searchTimer);
+    searchTimer = undefined;
   }
 
   function cancel() {
@@ -160,7 +165,7 @@ export function createOpenings() {
     list.replaceChildren();
     list.hidden = previous.hidden = next.hidden = retry.hidden = true;
     try {
-      const page = await getOpenings(revision, cursors[index], pageSize, request.signal);
+      const page = await getOpenings(revision, cursors[index], pageSize, request.signal, search);
       if (active !== request) return;
       revision = page.revision;
       nextAfter = page.nextAfter;
@@ -183,7 +188,7 @@ export function createOpenings() {
       list.hidden = !rows.length;
       status.textContent = rows.length
         ? `Page ${index + 1} · ${rows.length} named ${rows.length === 1 ? 'opening' : 'openings'}`
-        : 'No named openings on this page.';
+        : search ? 'No openings match your search.' : 'No named openings on this page.';
       previous.hidden = next.hidden = false;
       previous.disabled = index === 0;
       next.disabled = nextAfter === null;
@@ -199,6 +204,20 @@ export function createOpenings() {
       if (active === request) active = undefined;
     }
   }
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim();
+    if (query === search) return;
+    cancelLoad();
+    search = query;
+    cursors = [0];
+    index = 0;
+    nextAfter = null;
+    list.replaceChildren();
+    list.hidden = previous.hidden = next.hidden = retry.hidden = true;
+    status.textContent = search ? 'Searching named openings…' : 'Loading named openings…';
+    searchTimer = window.setTimeout(() => void load(), 300);
+  });
 
   previous.addEventListener('click', () => {
     if (index === 0 || active) return;
@@ -223,6 +242,8 @@ export function createOpenings() {
     start() {
       cancel();
       revision = undefined;
+      search = '';
+      searchInput.value = '';
       cursors = [0];
       index = 0;
       nextAfter = null;

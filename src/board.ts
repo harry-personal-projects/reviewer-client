@@ -2,6 +2,7 @@ import { Chessground } from '@lichess-org/chessground';
 import type { Dests, Key } from '@lichess-org/chessground/types';
 import type { Chess, PieceSymbol, Square } from 'chess.js';
 import { createBoardArrows } from './board-arrows';
+import { moveClassificationIcon, type MoveClassification } from './move-icon';
 
 const files = 'abcdefgh';
 const ranks = '12345678';
@@ -33,6 +34,9 @@ export function createBoard(
   let keyboardCursor = false;
   let dests: Dests = new Map();
   let epoch = 0;
+  let badge: HTMLElement | undefined;
+  let badgeSquare: Square | undefined;
+  let badgeLabel: MoveClassification | undefined;
 
   function announce() {
     const piece = rules?.get(cursor);
@@ -111,6 +115,20 @@ export function createBoard(
       if (keyboardCursor) announce();
     },
     clearArrows: arrows.clear,
+    markMove(uci?: string, label?: MoveClassification) {
+      const square = label && uci ? uci.slice(2, 4) as Square : undefined;
+      if (square === badgeSquare && label === badgeLabel) return;
+      badge?.remove();
+      badge = undefined;
+      badgeSquare = square;
+      badgeLabel = label;
+      if (!square || !label) return;
+      badge = moveClassificationIcon(label);
+      badge.classList.add('board-move-badge');
+      badge.style.left = `${(files.indexOf(square[0]) + 1) * 12.5}%`;
+      badge.style.top = `${(8 - Number(square[1])) * 12.5}%`;
+      container.append(badge);
+    },
     destroy() {
       epoch++;
       listeners.abort();
