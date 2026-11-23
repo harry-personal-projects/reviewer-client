@@ -24,6 +24,8 @@ Recent submissions are stored as links in the current browser for up to 24 hours
 
 Both boards accept legal moves directly. Click or drag a piece, or focus the board and use the arrow keys and Enter to select a square. Pick a piece when promoting. The engine classifies the candidate and refreshes its recommendations. Undo or return to the recorded ply without changing the original game or catalog opening.
 
+In the opening replay, **Previous** (or the left arrow key when the board isn't focused) undoes one continuation move at a time. Once you're back on the recorded line, it steps to the previous opening move.
+
 The engine panel shows up to three ranked moves for the side to move, with the root and up to four replies per line. Mate and automatic draws can shorten a line. Opening SAN is shown separately. Older reviews may only have stored roots. New reviews show accuracy v3 per side: costly drops in engine win chance count more than small errors. This is not Chess.com's proprietary score. Resubmit to recalculate an older review; its stored score is unchanged.
 
 The selected review move or newly classified continuation shows its classification badge on the piece's destination square, as well as its text label next to the move. Use **Flip board** in a review or opening to switch sides without changing the position or its annotations.

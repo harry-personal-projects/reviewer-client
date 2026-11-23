@@ -50,11 +50,23 @@ function engineLine(candidate: Recommendation, ply: number) {
   return row;
 }
 
-type Elements = { board: HTMLElement; host: HTMLElement; score: HTMLElement; meter: HTMLMeterElement };
-export type PositionView = { select(ply: number): void; clearArrows(): void; flip(): void; destroy(): void };
+type Elements = {
+  board: HTMLElement;
+  host: HTMLElement;
+  score: HTMLElement;
+  meter: HTMLMeterElement;
+  previousMove?: HTMLButtonElement;
+};
+export type PositionView = {
+  select(ply: number): void;
+  undoContinuation(): boolean;
+  clearArrows(): void;
+  flip(): void;
+  destroy(): void;
+};
 
 export function createPositionView(
-  { board, host, score, meter }: Elements, source: (ply: number) => PositionSource,
+  { board, host, score, meter, previousMove }: Elements, source: (ply: number) => PositionSource,
   initial: RecordedPosition, moves: readonly (RecordedPosition & { uci: string; classification?: MoveClassification })[],
 ): PositionView {
   const template = document.querySelector<HTMLTemplateElement>('#position-analysis-template')!;
@@ -95,6 +107,7 @@ export function createPositionView(
         meter.setAttribute('aria-valuetext', evaluation.label);
       }
       undo.disabled = reset.disabled = !branch.length;
+      if (previousMove) previousMove.disabled = ply === 0 && !branch.length;
       branchLine.hidden = !branch.length;
       branchLine.replaceChildren();
       if (branch.length) {
@@ -150,6 +163,7 @@ export function createPositionView(
 
   return {
     select: analysis.select,
+    undoContinuation: analysis.undo,
     clearArrows: ground.clearArrows,
     flip: ground.flip,
     destroy() {
