@@ -273,6 +273,7 @@ nav button[aria-pressed='true'] {
 .interactive-board square.selected { background: rgb(24 81 151 / 50%); }
 .interactive-board square.last-move { background-color: rgb(60 128 218 / 42%); }
 .interactive-board square.check { background: radial-gradient(#c63259 5%, transparent 70%); }
+.interactive-board cg-board square.annotation-highlight { background-color: rgb(215 32 55 / 56%); }
 
 .board-frame:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
 .board-frame .interactive-board:focus-visible { outline: none; }
@@ -316,6 +317,7 @@ nav button[aria-pressed='true'] {
   stroke-width: 0.05;
 }
 .board-arrows .arrow-preview { opacity: 0.6; }
+.orientation-black .board-arrows { transform: rotate(180deg); }
 
 .move-panel { display: grid; align-content: start; gap: 0.65rem; }
 #initial-position { justify-self: start; }

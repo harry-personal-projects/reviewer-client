@@ -26,7 +26,9 @@ Both boards accept legal moves directly. Click or drag a piece, or focus the boa
 
 The engine panel shows up to three ranked moves for the side to move, with the root and up to four replies per line. Mate and automatic draws can shorten a line. Opening SAN is shown separately. Older reviews may only have stored roots. New reviews show accuracy v3 per side: costly drops in engine win chance count more than small errors. This is not Chess.com's proprietary score. Resubmit to recalculate an older review; its stored score is unchanged.
 
-The selected review move or newly classified continuation shows its classification badge on the piece's destination square, as well as its text label next to the move. Right-drag to draw an arrow; knight offsets bend in an L. Right-click an arrow or an endpoint to remove it, repeat the drag to toggle it, or select **Clear arrows**. Moving to another position clears arrows.
+The selected review move or newly classified continuation shows its classification badge on the piece's destination square, as well as its text label next to the move. Use **Flip board** in a review or opening to switch sides without changing the position or its annotations.
+
+Right-click a square to toggle a red highlight, or right-drag to draw an arrow. Knight offsets bend in an L. Repeat a drag to toggle that arrow, left-click an empty square to clear all arrows, or select **Clear arrows**. Clicking a piece leaves the arrows in place; moving to another position clears both arrows and highlights.
 
 ## Verify locally
 

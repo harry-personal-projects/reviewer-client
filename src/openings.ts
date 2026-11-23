@@ -23,6 +23,7 @@ function createOpeningReplay(panel: HTMLElement, restoreCatalog: () => void) {
   const previous = element<HTMLButtonElement>('opening-previous');
   const next = element<HTMLButtonElement>('opening-next');
   const clear = element('opening-clear-arrows');
+  const flip = element('opening-flip-board');
   const list = element('opening-recorded-list');
   const host = element('opening-analysis');
   const score = element('opening-evaluation');
@@ -66,6 +67,7 @@ function createOpeningReplay(panel: HTMLElement, restoreCatalog: () => void) {
   previous.addEventListener('click', () => show(ply - 1));
   next.addEventListener('click', () => show(ply + 1));
   clear.addEventListener('click', () => analysis?.clearArrows());
+  flip.addEventListener('click', () => analysis?.flip());
 
   return {
     step(delta: number) {

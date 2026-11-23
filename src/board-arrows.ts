@@ -1,3 +1,5 @@
+import type { Square } from 'chess.js';
+
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
 function center(square: string): [number, number] {
@@ -45,7 +47,8 @@ function drawArrow(from: string, to: string): SVGPathElement {
 }
 
 export function createBoardArrows(
-  surface: HTMLElement, squareAt: (x: number, y: number) => string | undefined,
+  board: HTMLElement, squareAt: (x: number, y: number) => Square | undefined,
+  toggleHighlight: (square: Square) => void,
 ) {
   const listeners = new AbortController();
   const options = { signal: listeners.signal };
@@ -53,9 +56,8 @@ export function createBoardArrows(
   overlay.setAttribute('viewBox', '0 0 8 8');
   overlay.setAttribute('aria-hidden', 'true');
   overlay.classList.add('board-arrows');
-  surface.parentElement?.append(overlay);
   const arrows = new Map<string, SVGPathElement>();
-  let drag: { pointer: number; from: string; moved: boolean; to?: string; preview?: SVGPathElement } | undefined;
+  let drag: { pointer: number; from: Square; moved: boolean; to?: Square; preview?: SVGPathElement } | undefined;
 
   function removeArrow(key: string): boolean {
     const arrow = arrows.get(key);
@@ -64,38 +66,23 @@ export function createBoardArrows(
     return arrows.delete(key);
   }
 
-  function removeAt(square: string, event: PointerEvent) {
-    if (!arrows.size) return;
-    const transform = overlay.getScreenCTM();
-    const point = transform && new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
-    // The map retains draw order: the last match is on top.
-    let latest: string | undefined;
-    for (const [key, arrow] of arrows) {
-      if (key.startsWith(square) || key.endsWith(square)
-        || (point && (arrow.isPointInFill(point) || arrow.isPointInStroke(point)))) {
-        latest = key;
-      }
-    }
-    if (latest) removeArrow(latest);
-  }
-
   function cancel(pointer: number) {
     if (drag?.pointer !== pointer) return;
     drag.preview?.remove();
     drag = undefined;
-    if (surface.hasPointerCapture(pointer)) surface.releasePointerCapture(pointer);
+    if (board.hasPointerCapture(pointer)) board.releasePointerCapture(pointer);
   }
 
-  surface.addEventListener('contextmenu', event => event.preventDefault(), options);
-  surface.addEventListener('pointerdown', event => {
+  board.addEventListener('contextmenu', event => event.preventDefault(), options);
+  board.addEventListener('pointerdown', event => {
     if (event.button !== 2 || drag) return;
     const from = squareAt(event.clientX, event.clientY);
     if (!from) return;
     event.preventDefault();
-    surface.setPointerCapture(event.pointerId);
+    board.setPointerCapture(event.pointerId);
     drag = { pointer: event.pointerId, from, moved: false };
   }, options);
-  surface.addEventListener('pointermove', event => {
+  board.addEventListener('pointermove', event => {
     if (drag?.pointer !== event.pointerId) return;
     if (!(event.buttons & 2)) {
       cancel(event.pointerId);
@@ -113,14 +100,14 @@ export function createBoardArrows(
       overlay.append(drag.preview);
     }
   }, options);
-  surface.addEventListener('pointerup', event => {
+  board.addEventListener('pointerup', event => {
     if (drag?.pointer !== event.pointerId) return;
     const { from, moved } = drag;
     const to = squareAt(event.clientX, event.clientY);
     cancel(event.pointerId);
     if (event.button !== 2 || !to) return;
     if (to === from) {
-      if (!moved) removeAt(to, event);
+      if (!moved) toggleHighlight(to);
       return;
     }
     const key = from + to;
@@ -129,8 +116,8 @@ export function createBoardArrows(
     arrows.set(key, arrow);
     overlay.append(arrow);
   }, options);
-  surface.addEventListener('pointercancel', event => cancel(event.pointerId), options);
-  surface.addEventListener('lostpointercapture', event => cancel(event.pointerId), options);
+  board.addEventListener('pointercancel', event => cancel(event.pointerId), options);
+  board.addEventListener('lostpointercapture', event => cancel(event.pointerId), options);
 
   function clear() {
     if (drag) cancel(drag.pointer);
@@ -139,6 +126,10 @@ export function createBoardArrows(
   }
 
   return {
+    mount(container: HTMLElement) {
+      if (drag) cancel(drag.pointer);
+      container.append(overlay);
+    },
     clear,
     destroy() {
       clear();
