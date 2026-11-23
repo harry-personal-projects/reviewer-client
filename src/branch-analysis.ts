@@ -203,7 +203,7 @@ export function createBranchAnalysis(
       else paintBoard(false);
     },
     undo() {
-      if (!branch.length) return;
+      if (!branch.length) return false;
       cancelRequest();
       cancelPromotion();
       branch.pop();
@@ -213,6 +213,7 @@ export function createBranchAnalysis(
       paintBoard(true);
       if (!sourceMissing) void refresh();
       else paintAnalysis();
+      return true;
     },
     reset() {
       if (branch.length) select(ply);

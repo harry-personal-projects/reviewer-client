@@ -41,13 +41,19 @@ function createOpeningReplay(panel: HTMLElement, restoreCatalog: () => void) {
     ply = nextPly;
     const move = ply === 0 ? undefined : replay.moves[ply - 1];
     analysis?.select(ply);
-    previous.disabled = ply === 0;
     next.disabled = ply === replay.moves.length;
     status.textContent = move ? `Ply ${ply} of ${replay.moves.length}: ${move.san}` : 'Starting position';
     selected?.removeAttribute('aria-current');
     selected = buttons[ply - 1] ?? start;
     selected.setAttribute('aria-current', 'true');
     keepMoveVisible(list, buttons[ply - 1]);
+  }
+
+  function step(delta: number) {
+    if (!analysis || panel.hidden) return false;
+    if (delta < 0 && analysis.undoContinuation()) return true;
+    show(ply + delta);
+    return true;
   }
 
   function close() {
@@ -64,17 +70,13 @@ function createOpeningReplay(panel: HTMLElement, restoreCatalog: () => void) {
     restoreCatalog();
   });
   start.addEventListener('click', () => show(0));
-  previous.addEventListener('click', () => show(ply - 1));
-  next.addEventListener('click', () => show(ply + 1));
+  previous.addEventListener('click', () => step(-1));
+  next.addEventListener('click', () => step(1));
   clear.addEventListener('click', () => analysis?.clearArrows());
   flip.addEventListener('click', () => analysis?.flip());
 
   return {
-    step(delta: number) {
-      if (!replay || panel.hidden) return false;
-      show(ply + delta);
-      return true;
-    },
+    step,
     close,
     async open(item: OpeningReplayKey, revision: string) {
       close();
@@ -90,7 +92,7 @@ function createOpeningReplay(panel: HTMLElement, restoreCatalog: () => void) {
         if (active !== request) return;
         replay = loaded;
         position.hidden = false;
-        analysis = createPositionView({ board, host, score, meter },
+        analysis = createPositionView({ board, host, score, meter, previousMove: previous },
           ply => ({ revision, openingId: item.id, ply }), { fen: loaded.initialFen }, loaded.moves);
         buttons = loaded.moves.map((move, index) => {
           const control = button(numberedMove(move.san, index));
