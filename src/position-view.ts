@@ -51,7 +51,7 @@ function engineLine(candidate: Recommendation, ply: number) {
 }
 
 type Elements = { board: HTMLElement; host: HTMLElement; score: HTMLElement; meter: HTMLMeterElement };
-export type PositionView = { select(ply: number): void; clearArrows(): void; destroy(): void };
+export type PositionView = { select(ply: number): void; clearArrows(): void; flip(): void; destroy(): void };
 
 export function createPositionView(
   { board, host, score, meter }: Elements, source: (ply: number) => PositionSource,
@@ -151,6 +151,7 @@ export function createPositionView(
   return {
     select: analysis.select,
     clearArrows: ground.clearArrows,
+    flip: ground.flip,
     destroy() {
       analysis.destroy();
       ground.destroy();

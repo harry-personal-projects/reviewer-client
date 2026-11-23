@@ -25,6 +25,7 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
   const board = element('board');
   const host = element('review-analysis');
   const clearArrows = element('clear-arrows');
+  const flip = element('flip-board');
   const list = element('move-list');
   const initial = element<HTMLButtonElement>('initial-position');
   const previous = element<HTMLButtonElement>('previous-move');
@@ -49,6 +50,7 @@ export function createReviewView(choose: (ply: number) => void): ReviewView {
   }
 
   clearArrows.addEventListener('click', () => analysis?.clearArrows());
+  flip.addEventListener('click', () => analysis?.flip());
 
   return {
     close,
